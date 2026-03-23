@@ -23,7 +23,7 @@ from beans.api import (
     stats,
     update_bean,
 )
-from beans.models import BeanId, BeanNotFoundError, Dep, DepNotFoundError
+from beans.models import BeanId, BeanNotFoundError, Dep, DepNotFoundError, OpenChildrenError
 from beans.store import Store
 
 
@@ -112,6 +112,41 @@ class TestCloseBean:
     def test_close_nonexistent_raises(self, store):
         with pytest.raises(BeanNotFoundError):
             close_bean(store, BeanId("bean-00000000"))
+
+
+class TestCloseChildrenGuard:
+    """close_bean() guards against closing beans with open children."""
+
+    def test_close_with_open_children_raises(self, store):
+        parent = create_bean(store, "Epic")
+        create_bean(store, "Task", parent_id=parent.id)
+        with pytest.raises(OpenChildrenError, match="1 open child remain"):
+            close_bean(store, parent.id)
+
+    def test_close_with_open_children_force(self, store):
+        parent = create_bean(store, "Epic")
+        create_bean(store, "Task", parent_id=parent.id)
+        result = close_bean(store, parent.id, force=True)
+        assert result.status == "closed"
+
+    def test_close_with_all_children_closed(self, store):
+        parent = create_bean(store, "Epic")
+        child = create_bean(store, "Task", parent_id=parent.id)
+        close_bean(store, child.id)
+        result = close_bean(store, parent.id)
+        assert result.status == "closed"
+
+    def test_close_no_children_works(self, store):
+        bean = create_bean(store, "Task")
+        result = close_bean(store, bean.id)
+        assert result.status == "closed"
+
+    def test_close_multiple_open_children(self, store):
+        parent = create_bean(store, "Epic")
+        create_bean(store, "Task 1", parent_id=parent.id)
+        create_bean(store, "Task 2", parent_id=parent.id)
+        with pytest.raises(OpenChildrenError, match="2 open children remain"):
+            close_bean(store, parent.id)
 
 
 class TestDeleteBean:
