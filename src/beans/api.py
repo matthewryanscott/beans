@@ -70,8 +70,8 @@ def list_beans(store: Store) -> list[Bean]:
     return store.list()
 
 
-def ready_beans(store: Store) -> list[Bean]:
-    return store.ready()
+def ready_beans(store: Store, assignee=None, unassigned=False) -> list[Bean]:
+    return store.ready(assignee=assignee, unassigned=unassigned)
 
 
 def search_beans(store: Store, query) -> list[Bean]:

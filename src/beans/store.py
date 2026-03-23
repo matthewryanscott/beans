@@ -218,8 +218,8 @@ class BeanStore:
         result["by_assignee"] = dict(cursor.fetchall())
         return result
 
-    def ready(self) -> list[Bean]:
-        return beans(self.conn.execute("""
+    def ready(self, assignee=None, unassigned=False) -> list[Bean]:
+        sql = """
             WITH RECURSIVE
             blocked_by_deps(id) AS (
                 SELECT d.to_id
@@ -242,8 +242,15 @@ class BeanStore:
             WHERE status != 'closed'
               AND id NOT IN (SELECT id FROM blocked_by_deps)
               AND id NOT IN (SELECT id FROM blocked_by_children)
-            ORDER BY priority
-        """))
+        """
+        params: list = []
+        if assignee is not None:
+            sql += "  AND assignee = ?\n"
+            params.append(assignee)
+        elif unassigned:
+            sql += "  AND assignee IS NULL\n"
+        sql += "  ORDER BY priority"
+        return beans(self.conn.execute(sql, params))
 
 
 class DepStore:
@@ -357,8 +364,8 @@ class Store:
     def list_by_assignee(self, actor) -> list[Bean]:
         return self.bean.list_by_assignee(actor)
 
-    def ready(self) -> list[Bean]:
-        return self.bean.ready()
+    def ready(self, assignee=None, unassigned=False) -> list[Bean]:
+        return self.bean.ready(assignee=assignee, unassigned=unassigned)
 
     def search(self, query) -> list[Bean]:
         return self.bean.search(query)
