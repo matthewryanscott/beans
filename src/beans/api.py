@@ -66,12 +66,12 @@ def release_mine(store: Store, actor) -> list[Bean]:
     return [release_bean(store, bean.id, actor) for bean in beans]
 
 
-def list_beans(store: Store) -> list[Bean]:
-    return store.list()
+def list_beans(store: Store, parent_id=None) -> list[Bean]:
+    return store.list(parent_id=parent_id)
 
 
-def ready_beans(store: Store) -> list[Bean]:
-    return store.ready()
+def ready_beans(store: Store, parent_id=None) -> list[Bean]:
+    return store.ready(parent_id=parent_id)
 
 
 def search_beans(store: Store, query) -> list[Bean]:

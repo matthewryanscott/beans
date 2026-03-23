@@ -2,6 +2,7 @@
 from datetime import datetime
 import importlib.resources
 import json
+import os
 from typing import Annotated, NamedTuple
 
 # Pip imports
@@ -35,6 +36,16 @@ app = typer.Typer()
 dep_app = typer.Typer()
 app.add_typer(dep_app, name="dep")
 BeanIdArg = Annotated[str, typer.Argument(parser=BeanId)]
+
+ENV_BEANS_PARENT_ID = "MAGIC_BEANS_PARENT_ID"
+
+
+def default_parent_id():
+    """Get default parent_id from MAGIC_BEANS_PARENT_ID env var, or None."""
+    val = os.environ.get(ENV_BEANS_PARENT_ID)
+    if val:
+        return BeanId(val)
+    return None
 
 
 class Config(NamedTuple):
@@ -121,6 +132,8 @@ def create(
 ):
     """Create a new bean."""
     cfg = ctx.obj
+    if parent is None:
+        parent = default_parent_id()
     kwargs = {"body": body, "parent_id": parent}
     if type:
         kwargs["type"] = type
@@ -244,21 +257,31 @@ def release(
 
 
 @app.command("list")
-def list_cmd(ctx: typer.Context):
+def list_cmd(
+    ctx: typer.Context,
+    parent: Annotated[str | None, typer.Option(help="Filter by parent bean id", parser=BeanId)] = None,
+):
     """List all beans."""
     cfg = ctx.obj
+    if parent is None:
+        parent = default_parent_id()
     with get_store(cfg) as store:
-        beans = list_beans(store)
+        beans = list_beans(store, parent_id=parent)
 
     typer.echo(output(beans, cfg.json, cfg.fields))
 
 
 @app.command()
-def ready(ctx: typer.Context):
+def ready(
+    ctx: typer.Context,
+    parent: Annotated[str | None, typer.Option(help="Filter by parent bean id", parser=BeanId)] = None,
+):
     """List only unblocked beans."""
     cfg = ctx.obj
+    if parent is None:
+        parent = default_parent_id()
     with get_store(cfg) as store:
-        beans = ready_beans(store)
+        beans = ready_beans(store, parent_id=parent)
 
     typer.echo(output(beans, cfg.json, cfg.fields))
 
