@@ -244,21 +244,27 @@ def release(
 
 
 @app.command("list")
-def list_cmd(ctx: typer.Context):
+def list_cmd(
+    ctx: typer.Context,
+    parent: Annotated[str | None, typer.Option(help="Filter by parent bean id", parser=BeanId)] = None,
+):
     """List all beans."""
     cfg = ctx.obj
     with get_store(cfg) as store:
-        beans = list_beans(store)
+        beans = list_beans(store, parent_id=parent)
 
     typer.echo(output(beans, cfg.json, cfg.fields))
 
 
 @app.command()
-def ready(ctx: typer.Context):
+def ready(
+    ctx: typer.Context,
+    parent: Annotated[str | None, typer.Option(help="Filter by parent bean id", parser=BeanId)] = None,
+):
     """List only unblocked beans."""
     cfg = ctx.obj
     with get_store(cfg) as store:
-        beans = ready_beans(store)
+        beans = ready_beans(store, parent_id=parent)
 
     typer.echo(output(beans, cfg.json, cfg.fields))
 
