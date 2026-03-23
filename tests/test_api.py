@@ -52,6 +52,10 @@ class TestCreateBean:
         bean = create_bean(store, "Fix auth")
         assert show_bean(store, bean.id) == bean
 
+    def test_create_with_nonexistent_parent_raises(self, store):
+        with pytest.raises(BeanNotFoundError, match="does not exist"):
+            create_bean(store, "Orphan", parent_id=BeanId("bean-00000000"))
+
 
 class TestShowBean:
     """show_bean() retrieves a single bean by id."""
